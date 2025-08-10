@@ -29,20 +29,20 @@
   }
   .card {
     width: 100%; max-width: var(--tile); aspect-ratio: 1/1;
-    background: repeating-linear-gradient(45deg,#a7f3d0 0 12px,#99f6e4 12px 24px);
-    border: 1px solid #34d399; border-radius: 14px;
+    background: repeating-linear-gradient(45deg,#7dd3fc 0 12px,#38bdf8 12px 24px);
+    border: 4px solid #000000; /* dicker schwarzer Rand */
+    border-radius: 14px;
     display: flex; align-items: center; justify-content: center;
     font-size: 40px; user-select: none; touch-action: manipulation;
     box-shadow: inset 0 2px 8px rgba(0,0,0,.06);
   }
   .card.revealed {
-    background: #ffffff; border-color: #a7f3d0; flex-direction: column;
+    background: #ffffff; border-color: #000000; flex-direction: column;
   }
   .emoji { font-size: clamp(42px, 8vw, 64px); line-height: 1; }
-  .label { margin-top: 6px; font-size: clamp(12px,2.6vw,15px); color:#374151; text-align:center; }
-  /* Farbkreise */
+  .label { margin-top: 6px; font-size: clamp(12px,2.6vw,15px); color:#111; text-align:center; font-weight: bold; }
   .swatch {
-    width: 66%; aspect-ratio: 1/1; border-radius: 999px; border: 2px solid #e5e7eb;
+    width: 66%; aspect-ratio: 1/1; border-radius: 999px; border: 3px solid #000000;
   }
 </style>
 </head>
@@ -67,16 +67,16 @@ const WORDS = [
   { de: "Fee",        en: "fairy",    type: "emoji", emoji: "🧚" },
   { de: "Einhorn",    en: "unicorn",  type: "emoji", emoji: "🦄" },
   { de: "Prinzessin", en: "princess", type: "emoji", emoji: "👸" },
-  { de: "Lila",       en: "purple",   type: "color", color: "#7c3aed" }, // violet
-  { de: "Rosa",       en: "rose",     type: "color", color: "#f9a8d4" }, // light pink
-  { de: "Pink",       en: "pink",     type: "color", color: "#ec4899" }  // hot pink
+  { de: "Lila",       en: "purple",   type: "color", color: "#7c3aed" },
+  { de: "Rosa",       en: "rose",     type: "color", color: "#f9a8d4" },
+  { de: "Pink",       en: "pink",     type: "color", color: "#ec4899" }
 ];
 
 document.documentElement.style.setProperty('--tile', '110px');
 
 let deck = [];
-let revealed = [];   // aktuell offene Karten-IDs (max 2)
-let matched  = [];   // dauerhaft gefundene Karten-IDs
+let revealed = [];
+let matched  = [];
 let currentPlayer = 0;
 let scores = [0,0];
 let players = ["Spieler 1","Spieler 2"];
@@ -103,7 +103,7 @@ function speakEnglish(text) {
 /* ===== Setup ===== */
 function buildDeck() {
   deck = [];
-  const pairs = WORDS.slice(0, 6); // genau 6 Paare
+  const pairs = WORDS.slice(0, 6);
   pairs.forEach((w, idx) => {
     deck.push({ ...w, id: w.de + "-a-" + idx });
     deck.push({ ...w, id: w.de + "-b-" + idx });
@@ -141,7 +141,6 @@ function renderBoard() {
     const isOpen = revealed.includes(card.id) || matched.includes(card.id);
     if (isOpen) {
       div.classList.add("revealed");
-      // Inhalt
       if (card.type === "emoji") {
         const emo = document.createElement("div");
         emo.className = "emoji";
@@ -151,8 +150,6 @@ function renderBoard() {
         const sw = document.createElement("div");
         sw.className = "swatch";
         sw.style.background = card.color;
-        sw.setAttribute("role", "img");
-        sw.setAttribute("aria-label", card.en);
         div.appendChild(sw);
       }
       const label = document.createElement("div");
@@ -168,14 +165,12 @@ function renderBoard() {
 
 /* ===== Logik ===== */
 function handleClick(card) {
-  // Wiederholen: auf bereits offene ODER schon gefundene Karte tippen
   if (revealed.includes(card.id) || matched.includes(card.id)) {
     speakEnglish(card.en);
     return;
   }
   if (lock) return;
 
-  // 1. Klick: sofort aufdecken
   if (revealed.length === 0) {
     revealed.push(card.id);
     speakEnglish(card.en);
@@ -183,7 +178,6 @@ function handleClick(card) {
     return;
   }
 
-  // 2. Klick: **langsamere Umdrehung** – kleine Verzögerung vor dem Aufdecken
   if (revealed.length === 1) {
     lock = true;
     setTimeout(() => {
@@ -191,7 +185,6 @@ function handleClick(card) {
       speakEnglish(card.en);
       renderBoard();
 
-      // Match-Check etwas länger sichtbar lassen
       setTimeout(() => {
         const [id1, id2] = revealed;
         const c1 = deck.find(c => c.id === id1);
@@ -201,7 +194,7 @@ function handleClick(card) {
         if (isMatch) {
           matched.push(id1, id2);
           scores[currentPlayer] += 1;
-          revealed = []; // gleicher Spieler bleibt dran
+          revealed = [];
         } else {
           revealed = [];
           currentPlayer = currentPlayer === 0 ? 1 : 0;
@@ -210,15 +203,13 @@ function handleClick(card) {
         renderBoard();
         updateStatus();
 
-        // Gewinn?
         if (matched.length === deck.length) {
-          const status = document.getElementById("status");
-          status.textContent =
+          document.getElementById("status").textContent =
             `Fertig! ${scores[0] === scores[1] ? "Unentschieden" :
               (scores[0] > scores[1] ? players[0] : players[1]) + " gewinnt!"}`;
         }
-      }, 900); // Sichtzeit nach der 2. Umdrehung
-    }, 300);   // **Verzögerung** beim Umdrehen der 2. Karte
+      }, 900);
+    }, 300);
   }
 }
 
@@ -231,7 +222,7 @@ function updateStatus() {
 document.getElementById("startBtn").addEventListener("click", startGame);
 document.getElementById("newBtn").addEventListener("click", () => newRound());
 
-/* Beim Laden */
+/* Startanzeige */
 buildDeck();
 renderBoard();
 document.getElementById("status").textContent = "Namen eingeben und „Spiel starten“ tippen. Oder direkt „Neues Spiel“.";
