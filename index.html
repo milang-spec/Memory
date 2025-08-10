@@ -5,45 +5,63 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Kinder-Memory (DE⇄EN)</title>
 <style>
-  :root { --tile: 110px; }
+  :root { --tile: 120px; } /* Kartengröße hier anpassen */
+  * { box-sizing: border-box; }
   body {
     font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
     margin: 0; color: #083344;
     background: linear-gradient(#ecfeff, #f0fdf4);
     display: flex; flex-direction: column; align-items: center; padding: 12px;
   }
+  header, .panel {
+    width: 100%; max-width: 960px;
+  }
   header {
-    width: 100%; max-width: 960px; display: flex; gap: 8px;
-    align-items: center; justify-content: space-between; flex-wrap: wrap; margin-bottom: 8px;
+    display: flex; gap: 8px; align-items: center; justify-content: space-between; flex-wrap: wrap; margin-bottom: 8px;
   }
   h1 { margin: 0; font-size: clamp(20px, 3.5vw, 28px); color:#065f46; }
   .controls { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
-  input { padding: 8px 10px; border: 1px solid #e5e7eb; border-radius: 10px; min-width: 140px; }
   button { border: 1px solid #10b981; background: #10b981; color: #fff; padding: 8px 12px; border-radius: 12px; cursor: pointer; }
   button.secondary { border-color: #e5e7eb; background:#fff; color:#111827; }
   #status { margin: 8px 0; font-weight: 600; }
+
   #game {
     display: grid; gap: 12px; justify-content: center; margin-top: 8px;
     grid-template-columns: repeat(auto-fit, minmax(var(--tile), 1fr));
     width: 100%; max-width: 960px;
   }
+
+  /* Karten – hoher Kontrast */
   .card {
     width: 100%; max-width: var(--tile); aspect-ratio: 1/1;
     background: repeating-linear-gradient(45deg,#7dd3fc 0 12px,#38bdf8 12px 24px);
-    border: 4px solid #000000; /* dicker schwarzer Rand */
+    border: 4px solid #000; /* dicker schwarzer Rand */
     border-radius: 14px;
     display: flex; align-items: center; justify-content: center;
     font-size: 40px; user-select: none; touch-action: manipulation;
     box-shadow: inset 0 2px 8px rgba(0,0,0,.06);
   }
   .card.revealed {
-    background: #ffffff; border-color: #000000; flex-direction: column;
+    background: #ffffff; border-color: #000; flex-direction: column;
   }
   .emoji { font-size: clamp(42px, 8vw, 64px); line-height: 1; }
   .label { margin-top: 6px; font-size: clamp(12px,2.6vw,15px); color:#111; text-align:center; font-weight: bold; }
   .swatch {
-    width: 66%; aspect-ratio: 1/1; border-radius: 999px; border: 3px solid #000000;
+    width: 66%; aspect-ratio: 1/1; border-radius: 999px; border: 3px solid #000;
   }
+
+  /* Start-Screen */
+  #startScreen {
+    background:#fff; border:1px solid #e5e7eb; border-radius:14px;
+    box-shadow: 0 6px 20px rgba(0,0,0,.06);
+    padding: 16px; margin-top: 10px;
+  }
+  .row { display: grid; gap: 10px; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
+  label { font-size: 14px; color:#334155; display:block; margin-bottom: 4px; }
+  input[type="text"] {
+    width: 100%; padding: 10px 12px; border: 1px solid #e5e7eb; border-radius: 10px; font-size: 16px;
+  }
+  .hint { font-size: 13px; color:#475569; margin-top: 6px; }
 </style>
 </head>
 <body>
@@ -51,29 +69,51 @@
 <header>
   <h1>🎴 Kinder-Memory (DE ⇄ EN)</h1>
   <div class="controls">
-    <input id="p1" placeholder="Spieler 1" />
-    <input id="p2" placeholder="Spieler 2" />
-    <button id="startBtn">Spiel starten</button>
     <button id="newBtn" class="secondary" title="Neue Runde mit frischem Mix">Neues Spiel</button>
+    <button id="backBtn" class="secondary" title="Zur Namenseingabe">Zurück</button>
   </div>
 </header>
 
+<!-- Start-Screen: mehr Platz im Spiel -->
+<section id="startScreen" class="panel">
+  <h2 style="margin:0 0 10px;font-size:20px">Spieler & Start</h2>
+  <div class="row">
+    <div>
+      <label for="p1">Name Spieler 1</label>
+      <input id="p1" type="text" placeholder="z. B. Anna" />
+    </div>
+    <div>
+      <label for="p2">Name Spieler 2</label>
+      <input id="p2" type="text" placeholder="z. B. Ben" />
+    </div>
+  </div>
+  <div class="hint">Es werden immer <b>6 Paare</b> zufällig aus dem Motiv-Pool gewählt.</div>
+  <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">
+    <button id="startBtn">Spiel starten</button>
+  </div>
+</section>
+
 <div id="status"></div>
-<div id="game"></div>
+<div id="game" aria-live="polite"></div>
 
 <script>
-/* ===== Fixe 6 Paare (nur diese Symbole) ===== */
-const WORDS = [
+/* ===== Motiv-Pool (9 Motive) =====
+   Fixe 6 werden pro Runde zufällig gewählt (max 6 Paare auf dem Board) */
+const POOL = [
   { de: "Fee",        en: "fairy",    type: "emoji", emoji: "🧚" },
   { de: "Einhorn",    en: "unicorn",  type: "emoji", emoji: "🦄" },
   { de: "Prinzessin", en: "princess", type: "emoji", emoji: "👸" },
   { de: "Lila",       en: "purple",   type: "color", color: "#7c3aed" },
   { de: "Rosa",       en: "rose",     type: "color", color: "#f9a8d4" },
-  { de: "Pink",       en: "pink",     type: "color", color: "#ec4899" }
+  { de: "Pink",       en: "pink",     type: "color", color: "#ec4899" },
+  { de: "Pferd",      en: "horse",    type: "emoji", emoji: "🐴" }, /* alternativ 🐎 */
+  { de: "Hase",       en: "rabbit",   type: "emoji", emoji: "🐰" },
+  { de: "Löwe",       en: "lion",     type: "emoji", emoji: "🦁" }
 ];
 
-document.documentElement.style.setProperty('--tile', '110px');
+const MAX_PAIRS = 6;
 
+let started = false;
 let deck = [];
 let revealed = [];
 let matched  = [];
@@ -82,15 +122,18 @@ let scores = [0,0];
 let players = ["Spieler 1","Spieler 2"];
 let lock = false;
 
-/* ===== Utilities ===== */
+/* ===== Helpers ===== */
 function shuffle(array) {
   for (let i = array.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
     [array[i], array[j]] = [array[j], array[i]];
   }
 }
+function samplePairs(pool, n) {
+  const a = pool.slice(); shuffle(a); return a.slice(0, n);
+}
 
-/* ===== Sprachausgabe (Englisch) ===== */
+/* ===== Speech ===== */
 function speakEnglish(text) {
   if (!text || !('speechSynthesis' in window)) return;
   const msg = new SpeechSynthesisUtterance(text);
@@ -102,20 +145,34 @@ function speakEnglish(text) {
 
 /* ===== Setup ===== */
 function buildDeck() {
+  const chosen = samplePairs(POOL, MAX_PAIRS);
   deck = [];
-  const pairs = WORDS.slice(0, 6);
-  pairs.forEach((w, idx) => {
+  chosen.forEach((w, idx) => {
     deck.push({ ...w, id: w.de + "-a-" + idx });
     deck.push({ ...w, id: w.de + "-b-" + idx });
   });
   shuffle(deck);
 }
 
+function toGame() {
+  document.getElementById("startScreen").style.display = "none";
+  started = true;
+}
+
+function toStartScreen() {
+  started = false;
+  document.getElementById("startScreen").style.display = "block";
+  document.getElementById("status").textContent = "Namen eingeben und „Spiel starten“ tippen.";
+  document.getElementById("game").innerHTML = "";
+}
+
+/* ===== Game Flow ===== */
 function startGame() {
   const p1Name = document.getElementById("p1").value.trim() || "Spieler 1";
   const p2Name = document.getElementById("p2").value.trim() || "Spieler 2";
   players = [p1Name, p2Name];
   newRound();
+  toGame();
 }
 
 function newRound() {
@@ -163,8 +220,11 @@ function renderBoard() {
   });
 }
 
-/* ===== Logik ===== */
+/* ===== Logic ===== */
 function handleClick(card) {
+  if (!started) return;
+
+  // Wiederholen: bereits offen oder schon gefunden
   if (revealed.includes(card.id) || matched.includes(card.id)) {
     speakEnglish(card.en);
     return;
@@ -180,11 +240,14 @@ function handleClick(card) {
 
   if (revealed.length === 1) {
     lock = true;
+
+    // 2. Karte: kurz verzögert aufdecken (besser sichtbar)
     setTimeout(() => {
       revealed.push(card.id);
       speakEnglish(card.en);
       renderBoard();
 
+      // kurze Sichtzeit beider Karten, dann prüfen
       setTimeout(() => {
         const [id1, id2] = revealed;
         const c1 = deck.find(c => c.id === id1);
@@ -194,7 +257,7 @@ function handleClick(card) {
         if (isMatch) {
           matched.push(id1, id2);
           scores[currentPlayer] += 1;
-          revealed = [];
+          revealed = []; // gleicher Spieler bleibt dran
         } else {
           revealed = [];
           currentPlayer = currentPlayer === 0 ? 1 : 0;
@@ -220,12 +283,14 @@ function updateStatus() {
 
 /* ===== Events ===== */
 document.getElementById("startBtn").addEventListener("click", startGame);
-document.getElementById("newBtn").addEventListener("click", () => newRound());
+document.getElementById("newBtn").addEventListener("click", () => {
+  // „Neues Spiel“: wieder direkt ins Spiel, mit frischem Mix & Reset
+  if (!started) { startGame(); } else { newRound(); }
+});
+document.getElementById("backBtn").addEventListener("click", () => toStartScreen());
 
-/* Startanzeige */
-buildDeck();
-renderBoard();
-document.getElementById("status").textContent = "Namen eingeben und „Spiel starten“ tippen. Oder direkt „Neues Spiel“.";
+/* Erste Anzeige (Start-Screen sichtbar) */
+document.getElementById("status").textContent = "Namen eingeben und „Spiel starten“ tippen.";
 </script>
 
 </body>
