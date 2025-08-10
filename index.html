@@ -1,45 +1,26 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Kinder-Memory (DE⇄EN)</title>
 <style>
-  :root { --tile: 100px; }
+  :root { --tile: 110px; }
   body {
     font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
-    margin: 0;
+    margin: 0; color: #083344;
     background: linear-gradient(#ecfeff, #f0fdf4);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding: 12px;
-    color: #083344;
+    display: flex; flex-direction: column; align-items: center; padding: 12px;
   }
   header {
-    width: 100%;
-    max-width: 960px;
-    display: flex;
-    gap: 8px;
-    align-items: center;
-    justify-content: space-between;
-    flex-wrap: wrap;
-    margin-bottom: 8px;
+    width: 100%; max-width: 960px; display: flex; gap: 8px;
+    align-items: center; justify-content: space-between; flex-wrap: wrap; margin-bottom: 8px;
   }
   h1 { margin: 0; font-size: clamp(20px, 3.5vw, 28px); color:#065f46; }
-  .controls {
-    display: flex; gap: 8px; align-items: center; flex-wrap: wrap;
-  }
-  input {
-    padding: 8px 10px; border: 1px solid #e5e7eb; border-radius: 10px; min-width: 140px;
-  }
-  button {
-    border: 1px solid #10b981; background: #10b981; color: #fff;
-    padding: 8px 12px; border-radius: 12px; cursor: pointer;
-  }
-  button.secondary {
-    border-color: #e5e7eb; background:#fff; color:#111827;
-  }
+  .controls { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  input { padding: 8px 10px; border: 1px solid #e5e7eb; border-radius: 10px; min-width: 140px; }
+  button { border: 1px solid #10b981; background: #10b981; color: #fff; padding: 8px 12px; border-radius: 12px; cursor: pointer; }
+  button.secondary { border-color: #e5e7eb; background:#fff; color:#111827; }
   #status { margin: 8px 0; font-weight: 600; }
   #game {
     display: grid; gap: 12px; justify-content: center; margin-top: 8px;
@@ -55,16 +36,13 @@
     box-shadow: inset 0 2px 8px rgba(0,0,0,.06);
   }
   .card.revealed {
-    background: #ffffff;
-    border-color: #a7f3d0;
-    flex-direction: column;
+    background: #ffffff; border-color: #a7f3d0; flex-direction: column;
   }
   .emoji { font-size: clamp(42px, 8vw, 64px); line-height: 1; }
   .label { margin-top: 6px; font-size: clamp(12px,2.6vw,15px); color:#374151; text-align:center; }
-  .panel {
-    width: 100%; max-width: 960px; background:#fff; border:1px solid #e5e7eb;
-    border-radius: 14px; padding: 12px; box-shadow: 0 6px 20px rgba(0,0,0,.06);
-    margin-top: 10px;
+  /* Farbkreise */
+  .swatch {
+    width: 66%; aspect-ratio: 1/1; border-radius: 999px; border: 2px solid #e5e7eb;
   }
 </style>
 </head>
@@ -73,8 +51,8 @@
 <header>
   <h1>🎴 Kinder-Memory (DE ⇄ EN)</h1>
   <div class="controls">
-    <input id="p1" placeholder="Spieler 1">
-    <input id="p2" placeholder="Spieler 2">
+    <input id="p1" placeholder="Spieler 1" />
+    <input id="p2" placeholder="Spieler 2" />
     <button id="startBtn">Spiel starten</button>
     <button id="newBtn" class="secondary" title="Neue Runde mit frischem Mix">Neues Spiel</button>
   </div>
@@ -84,32 +62,27 @@
 <div id="game"></div>
 
 <script>
-/* ===== Daten mit zusätzlichen Motiven (Einhorn, Fee, Prinzessin) ===== */
-const words = [
-  { de: "Apfel", en: "apple", emoji: "🍎" },
-  { de: "Auto", en: "car", emoji: "🚗" },
-  { de: "Haus", en: "house", emoji: "🏠" },
-  { de: "Hund", en: "dog", emoji: "🐶" },
-  { de: "Katze", en: "cat", emoji: "🐱" },
-  { de: "Ball", en: "ball", emoji: "⚽" },
-  { de: "Schuhe", en: "shoes", emoji: "👟" },
-  { de: "Wasser", en: "water", emoji: "💧" },
-  { de: "Einhorn", en: "unicorn", emoji: "🦄" },
-  { de: "Fee", en: "fairy", emoji: "🧚" },
-  { de: "Prinzessin", en: "princess", emoji: "👸" }
+/* ===== Fixe 6 Paare (nur diese Symbole) ===== */
+const WORDS = [
+  { de: "Fee",        en: "fairy",    type: "emoji", emoji: "🧚" },
+  { de: "Einhorn",    en: "unicorn",  type: "emoji", emoji: "🦄" },
+  { de: "Prinzessin", en: "princess", type: "emoji", emoji: "👸" },
+  { de: "Lila",       en: "purple",   type: "color", color: "#7c3aed" }, // violet
+  { de: "Rosa",       en: "rose",     type: "color", color: "#f9a8d4" }, // light pink
+  { de: "Pink",       en: "pink",     type: "color", color: "#ec4899" }  // hot pink
 ];
 
-// Du kannst hier die Kartengröße anpassen (in px)
 document.documentElement.style.setProperty('--tile', '110px');
 
 let deck = [];
-let revealed = [];   // aktuell offen liegende Karten-IDs (max 2)
-let matched = [];    // dauerhaft gefundene Karten-IDs
+let revealed = [];   // aktuell offene Karten-IDs (max 2)
+let matched  = [];   // dauerhaft gefundene Karten-IDs
 let currentPlayer = 0;
 let scores = [0,0];
 let players = ["Spieler 1","Spieler 2"];
 let lock = false;
 
+/* ===== Utilities ===== */
 function shuffle(array) {
   for (let i = array.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
@@ -127,16 +100,13 @@ function speakEnglish(text) {
   speechSynthesis.speak(msg);
 }
 
-/* ===== Spiel-Setup ===== */
+/* ===== Setup ===== */
 function buildDeck() {
   deck = [];
-  // Nimm 12 Paare maximal (anpassbar) – hier alle Worte
-  const pool = words.slice(0);
-  shuffle(pool);
-  const pairs = pool.slice(0, 12); // bis zu 12 Paare
+  const pairs = WORDS.slice(0, 6); // genau 6 Paare
   pairs.forEach((w, idx) => {
-    deck.push({...w, id: w.de + "-a-" + idx});
-    deck.push({...w, id: w.de + "-b-" + idx});
+    deck.push({ ...w, id: w.de + "-a-" + idx });
+    deck.push({ ...w, id: w.de + "-b-" + idx });
   });
   shuffle(deck);
 }
@@ -145,10 +115,10 @@ function startGame() {
   const p1Name = document.getElementById("p1").value.trim() || "Spieler 1";
   const p2Name = document.getElementById("p2").value.trim() || "Spieler 2";
   players = [p1Name, p2Name];
-  newRound(true);
+  newRound();
 }
 
-function newRound(keepPlayers=false) {
+function newRound() {
   scores = [0,0];
   currentPlayer = 0;
   matched = [];
@@ -158,7 +128,7 @@ function newRound(keepPlayers=false) {
   updateStatus();
 }
 
-/* ===== Rendering ===== */
+/* ===== Render ===== */
 function renderBoard() {
   const game = document.getElementById("game");
   game.innerHTML = "";
@@ -171,13 +141,23 @@ function renderBoard() {
     const isOpen = revealed.includes(card.id) || matched.includes(card.id);
     if (isOpen) {
       div.classList.add("revealed");
-      const emo = document.createElement("div");
-      emo.className = "emoji";
-      emo.textContent = card.emoji;
+      // Inhalt
+      if (card.type === "emoji") {
+        const emo = document.createElement("div");
+        emo.className = "emoji";
+        emo.textContent = card.emoji;
+        div.appendChild(emo);
+      } else {
+        const sw = document.createElement("div");
+        sw.className = "swatch";
+        sw.style.background = card.color;
+        sw.setAttribute("role", "img");
+        sw.setAttribute("aria-label", card.en);
+        div.appendChild(sw);
+      }
       const label = document.createElement("div");
       label.className = "label";
       label.innerHTML = `<b>${card.de}</b> · <i>${card.en}</i>`;
-      div.appendChild(emo);
       div.appendChild(label);
     } else {
       div.textContent = "🎴";
@@ -188,46 +168,57 @@ function renderBoard() {
 
 /* ===== Logik ===== */
 function handleClick(card) {
-  // Wiederholen, wenn Karte bereits offen ODER bereits gefunden ist
+  // Wiederholen: auf bereits offene ODER schon gefundene Karte tippen
   if (revealed.includes(card.id) || matched.includes(card.id)) {
     speakEnglish(card.en);
-    return; // State bleibt unverändert
+    return;
   }
-
   if (lock) return;
 
-  // normale Aufdeckung + Sprechen
-  revealed.push(card.id);
-  speakEnglish(card.en);
-  renderBoard();
+  // 1. Klick: sofort aufdecken
+  if (revealed.length === 0) {
+    revealed.push(card.id);
+    speakEnglish(card.en);
+    renderBoard();
+    return;
+  }
 
-  if (revealed.length === 2) {
+  // 2. Klick: **langsamere Umdrehung** – kleine Verzögerung vor dem Aufdecken
+  if (revealed.length === 1) {
     lock = true;
-    const [id1, id2] = revealed;
-    const c1 = deck.find(c => c.id === id1);
-    const c2 = deck.find(c => c.id === id2);
-
-    const isMatch = c1 && c2 && c1.en === c2.en && id1 !== id2;
     setTimeout(() => {
-      if (isMatch) {
-        matched.push(id1, id2);
-        scores[currentPlayer] += 1;
-        revealed = []; // gleiche Spieler*in ist weiter dran
-      } else {
-        revealed = [];
-        currentPlayer = currentPlayer === 0 ? 1 : 0;
-      }
-      lock = false;
+      revealed.push(card.id);
+      speakEnglish(card.en);
       renderBoard();
-      updateStatus();
-      // Gewinn?
-      if (matched.length === deck.length) {
-        const status = document.getElementById("status");
-        status.textContent =
-          `Fertig! ${scores[0] === scores[1] ? "Unentschieden" :
-            (scores[0] > scores[1] ? players[0] : players[1]) + " gewinnt!"}`;
-      }
-    }, 800);
+
+      // Match-Check etwas länger sichtbar lassen
+      setTimeout(() => {
+        const [id1, id2] = revealed;
+        const c1 = deck.find(c => c.id === id1);
+        const c2 = deck.find(c => c.id === id2);
+        const isMatch = c1 && c2 && c1.en === c2.en && id1 !== id2;
+
+        if (isMatch) {
+          matched.push(id1, id2);
+          scores[currentPlayer] += 1;
+          revealed = []; // gleicher Spieler bleibt dran
+        } else {
+          revealed = [];
+          currentPlayer = currentPlayer === 0 ? 1 : 0;
+        }
+        lock = false;
+        renderBoard();
+        updateStatus();
+
+        // Gewinn?
+        if (matched.length === deck.length) {
+          const status = document.getElementById("status");
+          status.textContent =
+            `Fertig! ${scores[0] === scores[1] ? "Unentschieden" :
+              (scores[0] > scores[1] ? players[0] : players[1]) + " gewinnt!"}`;
+        }
+      }, 900); // Sichtzeit nach der 2. Umdrehung
+    }, 300);   // **Verzögerung** beim Umdrehen der 2. Karte
   }
 }
 
@@ -240,7 +231,7 @@ function updateStatus() {
 document.getElementById("startBtn").addEventListener("click", startGame);
 document.getElementById("newBtn").addEventListener("click", () => newRound());
 
-/* Optional: Beim ersten Laden schon ein Board zeigen */
+/* Beim Laden */
 buildDeck();
 renderBoard();
 document.getElementById("status").textContent = "Namen eingeben und „Spiel starten“ tippen. Oder direkt „Neues Spiel“.";
