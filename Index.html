@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+  <title>Kinder-Memory (DE⇄EN)</title>
+  <meta name="theme-color" content="#10b981">
+  <style>
+    html, body { margin:0; height:100%; background:linear-gradient(#ecfeff,#f0fdf4); font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; }
+    .app { min-height:100%; display:flex; flex-direction:column; align-items:center; padding:16px; }
+    .container { width:100%; max-width:1100px; }
+    .panel { background:#fff; border-radius:16px; box-shadow: 0 6px 20px rgba(0,0,0,.06); padding:16px; }
+    .btn { border:1px solid #e5e7eb; background:#fff; border-radius:16px; padding:8px 12px; font-size:14px; }
+    .btn:active { transform: scale(.98); }
+    .h1 { font-size: clamp(22px, 4vw, 28px); font-weight: 700; margin:0 0 6px 0; }
+    .sub { font-size: 13px; color:#475569; margin-bottom:8px; }
+    .grid { display:grid; gap:14px; place-items:center; }
+    .footer { font-size:12px; color:#6b7280; margin: 0 0 20px; }
+    .chip { border-radius:999px; border:1px solid #e5e7eb; background:#fff; padding:6px 10px; font-size:13px; }
+    .chip.active { background:#ecfdf5; border-color:#a7f3d0; }
+  </style>
+</head>
+<body>
+<div id="root"></div>
+
+<!-- React + Babel (CDN) -->
+<script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+<script type="text/babel">
+/* ========== Helpers ========== */
+const { useEffect, useRef, useState } = React;
+
+function shuffleArray(arr) {
+  const a = arr.slice();
+  for (let i=a.length-1;i>0;i--) { const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; }
+  return a;
+}
+
+// Twemoji: konsistente, liebevoll gestaltete SVG-Emojis (frei nutzbar)
+function twemojiUrl(emoji) {
+  const cps = Array.from(emoji).map(ch => ch.codePointAt(0).toString(16));
+  return `https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/svg/${cps.join("-")}.svg`;
+}
+
+// Speech
+let cachedVoice=null;
+function pickEnglishVoice(){
+  if (cachedVoice) return cachedVoice;
+  const voices=(window.speechSynthesis?.getVoices?.()||[]);
+  const prefer=["Google UK English","Google US English","Microsoft Aria","Microsoft Zira","Microsoft Eva"];
+  for (const p of prefer) {
+    const v=voices.find(v => (v.name||"").toLowerCase().includes(p.toLowerCase()));
+    if (v) { cachedVoice=v; return v; }
+  }
+  return voices.find(v => (v.lang||"").toLowerCase().startsWith("en")) || null;
+}
+function speakEnglish(text, enabled=true){
+  if (!enabled || !text) return;
+  try {
+    if ("speechSynthesis" in window) {
+      const msg = new SpeechSynthesisUtterance(text);
+      const v = pickEnglishVoice();
+      if (v) msg.voice = v;
+      msg.lang = v?.lang || "en-US";
+      msg.rate = 0.9; msg.pitch = 1.0; msg.volume = 1.0;
+      window.speechSynthesis.cancel();
+      window.speechSynthesis.speak(msg);
+    }
+  } catch {}
+}
+
+/* ========== Daten ========== */
+const WORDS = [
+  { key:"apple", emoji:"🍎", en:"apple", de:"Apfel" },
+  { key:"car", emoji:"🚗", en:"car", de:"Auto" },
+  { key:"house", emoji:"🏠", en:"house", de:"Haus" },
+  { key:"dog", emoji:"🐶", en:"dog", de:"Hund" },
+  { key:"cat", emoji:"🐱", en:"cat", de:"Katze" },
+  { key:"chair", emoji:"🪑", en:"chair", de:"Stuhl" },
+  { key:"table", emoji:"🧩", en:"table", de:"Tisch" },
+  { key:"ball", emoji:"⚽", en:"ball", de:"Ball" },
+  { key:"shoes", emoji:"👟", en:"shoes", de:"Schuhe" },
+  { key:"water", emoji:"💧", en:"water", de:"Wasser" },
+  { key:"bread", emoji:"🍞", en:"bread", de:"Brot" },
+  { key:"phone", emoji:"📱", en:"phone", de:"Handy" },
+];
+function makeDeck(pairCount=8){
+  const pool = shuffleArray(WORDS).slice(0, pairCount);
+  const withIds = pool.flatMap((w, i) => [
+    { id:`${w.key}-${i}-a`, pairId:w.key, ...w },
+    { id:`${w.key}-${i}-b`, pairId:w.key, ...w },
+  ]);
+  return shuffleArray(withIds);
+}
+
+/* ========== App ========== */
+function App(){
+  const [playerNames,setPlayerNames]=useState(["Spieler 1","Spieler 2"]);
+  const [nameInputs,setNameInputs]=useState(["",""]);
+  const [started,setStarted]=useState(false);
+  const [speechOn,setSpeechOn]=useState(true);
+  const [lastWord,setLastWord]=useState("");
+
+  const [pairCount,setPairCount]=useState(8);
+  const [cardSize,setCardSize]=useState("L"); // S/M/L
+
+  const [deck,setDeck]=useState(makeDeck(pairCount));
+  const [revealed,setRevealed]=useState([]);
+  const [matchedIds,setMatchedIds]=useState(new Set());
+  const [currentPlayer,setCurrentPlayer]=useState(0);
+  const [scores,setScores]=useState([0,0]);
+  const lockRef=useRef(false);
+
+  useEffect(()=>{ if("speechSynthesis" in window && window.speechSynthesis.onvoiceschanged!==undefined){
+    window.speechSynthesis.onvoiceschanged = () => { cachedVoice=null; pickEnglishVoice(); };
+  }},[]);
+
+  useEffect(()=>{
+    setDeck(makeDeck(pairCount));
+    setRevealed([]); setMatchedIds(new Set()); setScores([0,0]); setCurrentPlayer(0);
+  },[pairCount, started]);
+
+  const allMatched = matchedIds.size === pairCount * 2;
+
+  function handleCard(card){
+    if (lockRef.current) return;
+    if (matchedIds.has(card.id)) return;
+    if (revealed.includes(card.id)) return;
+
+    const next=[...revealed, card.id];
+    setRevealed(next);
+    speakEnglish(card.en, speechOn);
+    setLastWord(card.en);
+
+    if (next.length===2){
+      lockRef.current = true;
+      const [id1,id2]=next;
+      const c1=deck.find(c=>c.id===id1);
+      const c2=deck.find(c=>c.id===id2);
+      const isMatch=c1 && c2 && c1.pairId===c2.pairId && id1!==id2;
+      setTimeout(()=>{
+        if (isMatch){
+          const m=new Set(matchedIds); m.add(id1); m.add(id2);
+          setMatchedIds(m);
+          setScores(prev=>{ const n=[...prev]; n[currentPlayer]+=1; return n; });
+          setRevealed([]);
+        } else {
+          setRevealed([]); setCurrentPlayer(p=>p===0?1:0);
+        }
+        lockRef.current=false;
+      }, 800);
+    }
+  }
+
+  function startGame(){
+    const p1=nameInputs[0].trim()||"Spieler 1";
+    const p2=nameInputs[1].trim()||"Spieler 2";
+    setPlayerNames([p1,p2]); setStarted(true);
+  }
+  function newRound(){
+    setDeck(makeDeck(pairCount));
+    setRevealed([]); setMatchedIds(new Set()); setScores([0,0]); setCurrentPlayer(0);
+  }
+
+  const sizePx = cardSize==="S"?110 : cardSize==="M"?140 : 180;
+  const statusText = allMatched
+    ? `Fertig! ${scores[0]===scores[1] ? "Unentschieden" : (scores[0]>scores[1]?playerNames[0]:playerNames[1]) + " gewinnt!"}`
+    : `${playerNames[currentPlayer]} ist dran`;
+
+  return (
+    <div className="app">
+      <div className="container">
+        <header style={{display:'flex',gap:12,justifyContent:'space-between',alignItems:'flex-end',marginBottom:12,flexWrap:'wrap'}}>
+          <div>
+            <h1 className="h1">🎴 Kinder-Memory (DE ⇄ EN)</h1>
+            <div className="sub">Kindgerechte, große Symbole (Twemoji-SVG), S/M/L-Karten & Sprachausgabe.</div>
+          </div>
+          <div style={{display:'flex',gap:8,flexWrap:'wrap'}}>
+            <label style={{display:'flex',gap:6,alignItems:'center',fontSize:13}}>
+              <input type="checkbox" checked={speechOn} onChange={e=>setSpeechOn(e.target.checked)} />
+              <span>Sprachausgabe</span>
+            </label>
+            <button className="btn" onClick={()=>speakEnglish(lastWord, speechOn)} disabled={!lastWord} title="Nochmal hören">🔊 Nochmal</button>
+            <button className="btn" onClick={newRound}>Neumischen</button>
+          </div>
+        </header>
+
+        {!started ? (
+          <section className="panel" style={{marginBottom:12}}>
+            <h2 style={{fontSize:18,margin:'0 0 10px'}}>Spieler & Einstellungen</h2>
+            <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12;margin-bottom:12">
+              <div>
+                <label style="font-size:13px;color:#475569">Name Spieler 1</label>
+                <input style="width:100%;margin-top:6px;padding:10px 12px;border-radius:12px;border:1px solid #e5e7eb;font-size:16px" placeholder="z. B. Anna"
+                  onChange={e=>setNameInputs([e.target.value,nameInputs[1]])}/>
+              </div>
+              <div>
+                <label style="font-size:13px;color:#475569">Name Spieler 2</label>
+                <input style="width:100%;margin-top:6px;padding:10px 12px;border-radius:12px;border:1px solid #e5e7eb;font-size:16px" placeholder="z. B. Ben"
+                  onChange={e=>setNameInputs([nameInputs[0],e.target.value])}/>
+              </div>
+            </div>
+
+            <div style={{display:'flex',alignItems:'center',gap:8,flexWrap:'wrap',marginBottom:12}}>
+              <span style={{fontSize:13,color:'#475569'}}>Anzahl Paare:</span>
+              {[6,8,10,12].map(n=>(
+                <button key={n} className={`chip ${pairCount===n?'active':''}`} onClick={()=>setPairCount(n)}
+                  style={{background:pairCount===n?'#ecfdf5':'#fff',borderColor:pairCount===n?'#a7f3d0':'#e5e7eb'}}>{n}</button>
+              ))}
+              <span style={{fontSize:13,color:'#475569'}}>Kartengröße:</span>
+              {["S","M","L"].map(s=>(
+                <button key={s} className={`chip ${cardSize===s?'active':''}`} onClick={()=>setCardSize(s)}
+                  style={{background:cardSize===s?'#ecfdf5':'#fff',borderColor:cardSize===s?'#a7f3d0':'#e5e7eb'}}>{s}</button>
+              ))}
+            </div>
+
+            <button className="btn" onClick={startGame} style={{background:'#10b981',color:'#fff',borderColor:'#10b981'}}>Spiel starten</button>
+          </section>
+        ) : (
+          <>
+            <section className="panel" style={{marginBottom:16}}>
+              <div className="grid" style={{gridTemplateColumns:`repeat(auto-fit,minmax(${sizePx}px,1fr))`}}>
+                {deck.map(card=>{
+                  const isOpen = revealed.includes(card.id) || matchedIds.has(card.id);
+                  return (
+                    <button key={card.id}
+                      onClick={()=>handleCard(card)}
+                      onKeyDown={(e)=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); handleCard(card);} }}
+                      disabled={matchedIds.has(card.id)}
+                      style={{
+                        width:'100%', maxWidth:`${sizePx}px`, aspectRatio:'1/1', borderRadius:16,
+                        border:`1px solid ${isOpen ? '#a7f3d0' : '#34d399'}`,
+                        boxShadow:'inset 0 2px 8px rgba(0,0,0,.06)',
+                        background: isOpen ? '#ECFDF5' : 'repeating-linear-gradient(45deg,#a7f3d0 0 12px,#99f6e4 12px 24px)',
+                        touchAction:'manipulation', WebkitTapHighlightColor:'transparent'
+                      }}
+                      aria-label={`Karte ${card.de} / ${card.en}`}
+                    >
+                      {isOpen ? (
+                        <div style={{height:'100%',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',padding:8}}>
+                          <div style={{height:'64%',display:'flex',alignItems:'center',justifyContent:'center',width:'100%'}}>
+                            <img src={twemojiUrl(card.emoji)} alt={card.en} style={{maxHeight:'100%',maxWidth:'100%'}}/>
+                          </div>
+                          <div style={{marginTop:8,fontSize:'clamp(12px,2.8vw,16px)',color:'#334155',textAlign:'center'}}>
+                            <b style={{marginRight:4}}>{card.de}</b> · <i>{card.en}</i>
+                          </div>
+                        </div>
+                      ) : (
+                        <div style={{height:'100%',display:'flex',alignItems:'center',justifyContent:'center'}}>
+                          <span style={{fontWeight:700,color:'#065f46'}}>🎴</span>
+                        </div>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            </section>
+
+            {allMatched && (
+              <section className="panel" style={{marginBottom:16, background:'#fffbeb', border:'1px solid #fde68a'}}>
+                🎉 Super! Alle Paare gefunden. {scores[0]===scores[1] ? "Unentschieden!" :
+                  `${scores[0]>scores[1]?playerNames[0]:playerNames[1]} gewinnt!`}
+              </section>
+            )}
+          </>
+        )}
+
+        <div className="footer">
+          Tipp: Falls die Sprachausgabe nicht funktioniert, aktiviere die System-Tonausgabe oder probiere einen anderen Browser.
+        </div>
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+</body>
+</html>
