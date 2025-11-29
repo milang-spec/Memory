@@ -87,8 +87,19 @@
         <option value="9">9 Paare</option>
       </select>
     </div>
+    <div>
+      <label for="category">Thema der Begriffe</label>
+      <select id="category">
+        <option value="fabelwesen">Fabelwesen</option>
+        <option value="adel">Adel</option>
+        <option value="zahlen">Zahlen (1–9)</option>
+        <option value="farben">Farben</option>
+        <option value="moebel">Möbel</option>
+        <option value="tiere">Tiere</option>
+      </select>
+    </div>
   </div>
-  <div class="hint">Es werden so viele Paare zufällig aus dem Motiv-Pool gewählt.</div>
+  <div class="hint">Es werden so viele Paare zufällig aus der gewählten Kategorie gewählt.</div>
   <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">
     <button id="startBtn">Spiel starten</button>
   </div>
@@ -98,23 +109,90 @@
 <div id="game" aria-live="polite"></div>
 
 <script>
-const POOL = [
-  { de: "Fee",        en: "fairy",    type: "emoji", emoji: "🧚" },
-  { de: "Einhorn",    en: "unicorn",  type: "emoji", emoji: "🦄" },
-  { de: "Prinzessin", en: "princess", type: "emoji", emoji: "👸" },
-  { de: "Lila",       en: "purple",   type: "color", color: "#7c3aed" },
-  { de: "Rosa",       en: "rose",     type: "color", color: "#f9a8d4" },
-  { de: "Pink",       en: "pink",     type: "color", color: "#ec4899" },
-  { de: "Pferd",      en: "horse",    type: "emoji", emoji: "🐴" },
-  { de: "Hase",       en: "rabbit",   type: "emoji", emoji: "🐰" },
-  { de: "Löwe",       en: "lion",     type: "emoji", emoji: "🦁" }
-];
+const CATEGORIES = {
+  fabelwesen: [
+    { de: "Fee",         en: "fairy",      type: "emoji", emoji: "🧚" },
+    { de: "Einhorn",     en: "unicorn",    type: "emoji", emoji: "🦄" },
+    { de: "Drache",      en: "dragon",     type: "emoji", emoji: "🐉" },
+    { de: "Meerjungfrau",en: "mermaid",    type: "emoji", emoji: "🧜‍♀️" },
+    { de: "Zauberer",    en: "wizard",     type: "emoji", emoji: "🧙‍♂️" },
+    { de: "Elf",         en: "elf",        type: "emoji", emoji: "🧝‍♂️" },
+    { de: "Troll",       en: "troll",      type: "emoji", emoji: "🧌" },
+    { de: "Gespenst",    en: "ghost",      type: "emoji", emoji: "👻" },
+    { de: "Phoenix",     en: "phoenix",    type: "emoji", emoji: "🔥" }
+  ],
+  adel: [
+    { de: "Prinzessin",  en: "princess",   type: "emoji", emoji: "👸" },
+    { de: "Prinz",       en: "prince",     type: "emoji", emoji: "🤴" },
+    { de: "König",       en: "king",       type: "emoji", emoji: "👑" },
+    { de: "Königin",     en: "queen",      type: "emoji", emoji: "👑" },
+    { de: "Schloss",     en: "castle",     type: "emoji", emoji: "🏰" },
+    { de: "Krone",       en: "crown",      type: "emoji", emoji: "👑" },
+    { de: "Ritter",      en: "knight",     type: "emoji", emoji: "🛡️" },
+    { de: "Thron",       en: "throne",     type: "emoji", emoji: "🪑" },
+    { de: "Kutsche",     en: "carriage",   type: "emoji", emoji: "🎠" }
+  ],
+  zahlen: [
+    { de: "Eins",  en: "one",   type: "emoji", emoji: "1️⃣" },
+    { de: "Zwei",  en: "two",   type: "emoji", emoji: "2️⃣" },
+    { de: "Drei",  en: "three", type: "emoji", emoji: "3️⃣" },
+    { de: "Vier",  en: "four",  type: "emoji", emoji: "4️⃣" },
+    { de: "Fünf",  en: "five",  type: "emoji", emoji: "5️⃣" },
+    { de: "Sechs", en: "six",   type: "emoji", emoji: "6️⃣" },
+    { de: "Sieben",en: "seven", type: "emoji", emoji: "7️⃣" },
+    { de: "Acht",  en: "eight", type: "emoji", emoji: "8️⃣" },
+    { de: "Neun",  en: "nine",  type: "emoji", emoji: "9️⃣" }
+  ],
+  farben: [
+    { de: "Rot",   en: "red",    type: "color", color: "#ef4444" },
+    { de: "Orange",en: "orange", type: "color", color: "#fb923c" },
+    { de: "Gelb",  en: "yellow", type: "color", color: "#facc15" },
+    { de: "Grün",  en: "green",  type: "color", color: "#22c55e" },
+    { de: "Blau",  en: "blue",   type: "color", color: "#3b82f6" },
+    { de: "Lila",  en: "purple", type: "color", color: "#7c3aed" }, // muss enthalten sein
+    { de: "Rosa",  en: "rose",   type: "color", color: "#f9a8d4" },
+    { de: "Pink",  en: "pink",   type: "color", color: "#ec4899" },
+    { de: "Braun", en: "brown",  type: "color", color: "#92400e" }
+  ],
+  moebel: [
+    { de: "Stuhl",   en: "chair",      type: "emoji", emoji: "🪑" },
+    { de: "Tisch",   en: "table",      type: "emoji", emoji: "🛋️" },
+    { de: "Bett",    en: "bed",        type: "emoji", emoji: "🛏️" },
+    { de: "Schrank", en: "wardrobe",   type: "emoji", emoji: "🚪" },
+    { de: "Sofa",    en: "sofa",       type: "emoji", emoji: "🛋️" },
+    { de: "Lampe",   en: "lamp",       type: "emoji", emoji: "💡" },
+    { de: "Regal",   en: "shelf",      type: "emoji", emoji: "📚" },
+    { de: "Teppich", en: "carpet",     type: "emoji", emoji: "🧶" },
+    { de: "Kommode", en: "dresser",    type: "emoji", emoji: "🧺" }
+  ],
+  tiere: [
+    { de: "Pferd",   en: "horse",   type: "emoji", emoji: "🐴" }, // muss enthalten sein
+    { de: "Löwe",    en: "lion",    type: "emoji", emoji: "🦁" }, // muss enthalten sein
+    { de: "Hase",    en: "rabbit",  type: "emoji", emoji: "🐰" },
+    { de: "Katze",   en: "cat",     type: "emoji", emoji: "🐱" },
+    { de: "Hund",    en: "dog",     type: "emoji", emoji: "🐶" },
+    { de: "Kuh",     en: "cow",     type: "emoji", emoji: "🐮" },
+    { de: "Elefant", en: "elephant",type: "emoji", emoji: "🐘" },
+    { de: "Frosch",  en: "frog",    type: "emoji", emoji: "🐸" },
+    { de: "Vogel",   en: "bird",    type: "emoji", emoji: "🐦" }
+  ]
+};
 
 let pairCount = 6;
+let categoryKey = "fabelwesen";
 let started = false, deck = [], revealed = [], matched  = [], currentPlayer = 0, scores = [0,0], players = ["Spieler 1","Spieler 2"], lock = false;
 
-function shuffle(array) { for (let i = array.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [array[i], array[j]] = [array[j], array[i]]; } }
-function samplePairs(pool, n) { const a = pool.slice(); shuffle(a); return a.slice(0, n); }
+function shuffle(array) {
+  for (let i = array.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [array[i], array[j]] = [array[j], array[i]];
+  }
+}
+function samplePairs(pool, n) {
+  const a = pool.slice();
+  shuffle(a);
+  return a.slice(0, n);
+}
 
 function speakEnglish(text) {
   if (!text || !('speechSynthesis' in window)) return;
@@ -125,7 +203,8 @@ function speakEnglish(text) {
 }
 
 function buildDeck() {
-  const chosen = samplePairs(POOL, pairCount);
+  const pool = CATEGORIES[categoryKey] || CATEGORIES["fabelwesen"];
+  const chosen = samplePairs(pool, pairCount);
   deck = [];
   chosen.forEach((w, idx) => {
     deck.push({ ...w, id: w.de + "-a-" + idx });
@@ -134,21 +213,35 @@ function buildDeck() {
   shuffle(deck);
 }
 
-function toGame() { document.getElementById("startScreen").style.display = "none"; started = true; }
-function toStartScreen() { started = false; document.getElementById("startScreen").style.display = "block"; document.getElementById("status").textContent = "Namen & Paare wählen."; document.getElementById("game").innerHTML = ""; }
+function toGame() {
+  document.getElementById("startScreen").style.display = "none";
+  started = true;
+}
+function toStartScreen() {
+  started = false;
+  document.getElementById("startScreen").style.display = "block";
+  document.getElementById("status").textContent = "Namen, Paare & Thema wählen.";
+  document.getElementById("game").innerHTML = "";
+}
 
 function startGame() {
   const p1Name = document.getElementById("p1").value.trim() || "Spieler 1";
   const p2Name = document.getElementById("p2").value.trim() || "Spieler 2";
   pairCount = parseInt(document.getElementById("pairCount").value, 10) || 6;
+  categoryKey = document.getElementById("category").value || "fabelwesen";
   players = [p1Name, p2Name];
   newRound();
   toGame();
 }
 
 function newRound() {
-  scores = [0,0]; currentPlayer = 0; matched = []; revealed = [];
-  buildDeck(); renderBoard(); updateStatus();
+  scores = [0,0];
+  currentPlayer = 0;
+  matched = [];
+  revealed = [];
+  buildDeck();
+  renderBoard();
+  updateStatus();
 }
 
 function renderBoard() {
@@ -163,47 +256,87 @@ function renderBoard() {
     if (isOpen) {
       div.classList.add("revealed");
       if (card.type === "emoji") {
-        const emo = document.createElement("div"); emo.className = "emoji"; emo.textContent = card.emoji; div.appendChild(emo);
+        const emo = document.createElement("div");
+        emo.className = "emoji";
+        emo.textContent = card.emoji;
+        div.appendChild(emo);
       } else {
-        const sw = document.createElement("div"); sw.className = "swatch"; sw.style.background = card.color; div.appendChild(sw);
+        const sw = document.createElement("div");
+        sw.className = "swatch";
+        sw.style.background = card.color;
+        div.appendChild(sw);
       }
-      const label = document.createElement("div"); label.className = "label"; label.innerHTML = `<b>${card.de}</b> · <i>${card.en}</i>`; div.appendChild(label);
-    } else { div.textContent = "🎴"; }
+      const label = document.createElement("div");
+      label.className = "label";
+      label.innerHTML = `<b>${card.de}</b> · <i>${card.en}</i>`;
+      div.appendChild(label);
+    } else {
+      div.textContent = "🎴";
+    }
     game.appendChild(div);
   });
 }
 
 function handleClick(card) {
   if (!started) return;
-  if (revealed.includes(card.id) || matched.includes(card.id)) { speakEnglish(card.en); return; }
+  if (revealed.includes(card.id) || matched.includes(card.id)) {
+    speakEnglish(card.en);
+    return;
+  }
   if (lock) return;
   if (revealed.length === 0) {
-    revealed.push(card.id); speakEnglish(card.en); renderBoard(); return;
+    revealed.push(card.id);
+    speakEnglish(card.en);
+    renderBoard();
+    return;
   }
   if (revealed.length === 1) {
     lock = true;
     setTimeout(() => {
-      revealed.push(card.id); speakEnglish(card.en); renderBoard();
+      revealed.push(card.id);
+      speakEnglish(card.en);
+      renderBoard();
       setTimeout(() => {
         const [id1, id2] = revealed;
-        const c1 = deck.find(c => c.id === id1); const c2 = deck.find(c => c.id === id2);
+        const c1 = deck.find(c => c.id === id1);
+        const c2 = deck.find(c => c.id === id2);
         const isMatch = c1 && c2 && c1.en === c2.en && id1 !== id2;
-        if (isMatch) { matched.push(id1, id2); scores[currentPlayer] += 1; revealed = []; }
-        else { revealed = []; currentPlayer = currentPlayer === 0 ? 1 : 0; }
-        lock = false; renderBoard(); updateStatus();
-        if (matched.length === deck.length) { document.getElementById("status").textContent = `Fertig! ${scores[0] === scores[1] ? "Unentschieden" : (scores[0] > scores[1] ? players[0] : players[1]) + " gewinnt!"}`; }
+        if (isMatch) {
+          matched.push(id1, id2);
+          scores[currentPlayer] += 1;
+          revealed = [];
+        } else {
+          revealed = [];
+          currentPlayer = currentPlayer === 0 ? 1 : 0;
+        }
+        lock = false;
+        renderBoard();
+        updateStatus();
+        if (matched.length === deck.length) {
+          document.getElementById("status").textContent =
+            `Fertig! ${scores[0] === scores[1] ? "Unentschieden" : ((scores[0] > scores[1] ? players[0] : players[1]) + " gewinnt!")}`;
+        }
       }, 900);
     }, 300);
   }
 }
 
-function updateStatus() { document.getElementById("status").textContent = `${players[currentPlayer]} ist dran · ${players[0]}: ${scores[0]} | ${players[1]}: ${scores[1]}`; }
+function updateStatus() {
+  document.getElementById("status").textContent =
+    `${players[currentPlayer]} ist dran · ${players[0]}: ${scores[0]} | ${players[1]}: ${scores[1]}`;
+}
 
 document.getElementById("startBtn").addEventListener("click", startGame);
-document.getElementById("newBtn").addEventListener("click", () => { if (!started) { startGame(); } else { newRound(); } });
+document.getElementById("newBtn").addEventListener("click", () => {
+  if (!started) {
+    startGame();
+  } else {
+    newRound();
+  }
+});
 document.getElementById("backBtn").addEventListener("click", () => toStartScreen());
 
-document.getElementById("status").textContent = "Namen & Paare wählen.";
+document.getElementById("status").textContent = "Namen, Paare & Thema wählen.";
 </script>
 
 </body>
