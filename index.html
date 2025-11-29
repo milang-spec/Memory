@@ -110,71 +110,82 @@
 
 <script>
 const CATEGORIES = {
+  // 1. Fabelwesen (inkl. Fee)
   fabelwesen: [
-    { de: "Fee",         en: "fairy",      type: "emoji", emoji: "🧚" },
-    { de: "Einhorn",     en: "unicorn",    type: "emoji", emoji: "🦄" },
-    { de: "Drache",      en: "dragon",     type: "emoji", emoji: "🐉" },
-    { de: "Meerjungfrau",en: "mermaid",    type: "emoji", emoji: "🧜‍♀️" },
-    { de: "Zauberer",    en: "wizard",     type: "emoji", emoji: "🧙‍♂️" },
-    { de: "Elf",         en: "elf",        type: "emoji", emoji: "🧝‍♂️" },
-    { de: "Troll",       en: "troll",      type: "emoji", emoji: "🧌" },
-    { de: "Gespenst",    en: "ghost",      type: "emoji", emoji: "👻" },
-    { de: "Phoenix",     en: "phoenix",    type: "emoji", emoji: "🔥" }
+    { de: "Fee",          en: "fairy",      type: "emoji", emoji: "🧚" },
+    { de: "Einhorn",      en: "unicorn",    type: "emoji", emoji: "🦄" },
+    { de: "Drache",       en: "dragon",     type: "emoji", emoji: "🐉" },
+    { de: "Meerjungfrau", en: "mermaid",    type: "emoji", emoji: "🧜‍♀️" },
+    { de: "Zauberer",     en: "wizard",     type: "emoji", emoji: "🧙‍♂️" },
+    { de: "Elf",          en: "elf",        type: "emoji", emoji: "🧝‍♂️" },
+    { de: "Troll",        en: "troll",      type: "emoji", emoji: "🧌" },
+    { de: "Gespenst",     en: "ghost",      type: "emoji", emoji: "👻" },
+    { de: "Hexe",         en: "witch",      type: "emoji", emoji: "🧙‍♀️" }  // statt Phoenix
   ],
+
+  // 2. Adel – alle mit eindeutig unterschiedlichen Symbolen
   adel: [
-    { de: "Prinzessin",  en: "princess",   type: "emoji", emoji: "👸" },
-    { de: "Prinz",       en: "prince",     type: "emoji", emoji: "🤴" },
-    { de: "König",       en: "king",       type: "emoji", emoji: "👑" },
-    { de: "Königin",     en: "queen",      type: "emoji", emoji: "👑" },
-    { de: "Schloss",     en: "castle",     type: "emoji", emoji: "🏰" },
-    { de: "Krone",       en: "crown",      type: "emoji", emoji: "👑" },
-    { de: "Ritter",      en: "knight",     type: "emoji", emoji: "🛡️" },
-    { de: "Thron",       en: "throne",     type: "emoji", emoji: "🪑" },
-    { de: "Kutsche",     en: "carriage",   type: "emoji", emoji: "🎠" }
+    { de: "Prinzessin",   en: "princess",   type: "emoji", emoji: "👸" },
+    { de: "Prinz",        en: "prince",     type: "emoji", emoji: "🤴" },
+    { de: "Krone",        en: "crown",      type: "emoji", emoji: "👑" },
+    { de: "Schloss",      en: "castle",     type: "emoji", emoji: "🏰" },
+    { de: "Ritter",       en: "knight",     type: "emoji", emoji: "🛡️" },
+    { de: "Schwert",      en: "sword",      type: "emoji", emoji: "⚔️" },
+    { de: "Ring",         en: "ring",       type: "emoji", emoji: "💍" },
+    { de: "Kutsche",      en: "carriage",   type: "emoji", emoji: "🎠" },
+    { de: "Schatz",       en: "treasure",   type: "emoji", emoji: "💰" }
   ],
+
+  // 3. Zahlen (1–9)
   zahlen: [
-    { de: "Eins",  en: "one",   type: "emoji", emoji: "1️⃣" },
-    { de: "Zwei",  en: "two",   type: "emoji", emoji: "2️⃣" },
-    { de: "Drei",  en: "three", type: "emoji", emoji: "3️⃣" },
-    { de: "Vier",  en: "four",  type: "emoji", emoji: "4️⃣" },
-    { de: "Fünf",  en: "five",  type: "emoji", emoji: "5️⃣" },
-    { de: "Sechs", en: "six",   type: "emoji", emoji: "6️⃣" },
-    { de: "Sieben",en: "seven", type: "emoji", emoji: "7️⃣" },
-    { de: "Acht",  en: "eight", type: "emoji", emoji: "8️⃣" },
-    { de: "Neun",  en: "nine",  type: "emoji", emoji: "9️⃣" }
+    { de: "Eins",   en: "one",   type: "emoji", emoji: "1️⃣" },
+    { de: "Zwei",   en: "two",   type: "emoji", emoji: "2️⃣" },
+    { de: "Drei",   en: "three", type: "emoji", emoji: "3️⃣" },
+    { de: "Vier",   en: "four",  type: "emoji", emoji: "4️⃣" },
+    { de: "Fünf",   en: "five",  type: "emoji", emoji: "5️⃣" },
+    { de: "Sechs",  en: "six",   type: "emoji", emoji: "6️⃣" },
+    { de: "Sieben", en: "seven", type: "emoji", emoji: "7️⃣" },
+    { de: "Acht",   en: "eight", type: "emoji", emoji: "8️⃣" },
+    { de: "Neun",   en: "nine",  type: "emoji", emoji: "9️⃣" }
   ],
+
+  // 4. Farben (Farbfelder – visuell klar)
   farben: [
-    { de: "Rot",   en: "red",    type: "color", color: "#ef4444" },
-    { de: "Orange",en: "orange", type: "color", color: "#fb923c" },
-    { de: "Gelb",  en: "yellow", type: "color", color: "#facc15" },
-    { de: "Grün",  en: "green",  type: "color", color: "#22c55e" },
-    { de: "Blau",  en: "blue",   type: "color", color: "#3b82f6" },
-    { de: "Lila",  en: "purple", type: "color", color: "#7c3aed" }, // muss enthalten sein
-    { de: "Rosa",  en: "rose",   type: "color", color: "#f9a8d4" },
-    { de: "Pink",  en: "pink",   type: "color", color: "#ec4899" },
-    { de: "Braun", en: "brown",  type: "color", color: "#92400e" }
+    { de: "Rot",    en: "red",     type: "color", color: "#ef4444" },
+    { de: "Orange", en: "orange",  type: "color", color: "#fb923c" },
+    { de: "Gelb",   en: "yellow",  type: "color", color: "#facc15" },
+    { de: "Grün",   en: "green",   type: "color", color: "#22c55e" },
+    { de: "Blau",   en: "blue",    type: "color", color: "#3b82f6" },
+    { de: "Lila",   en: "purple",  type: "color", color: "#7c3aed" }, // muss enthalten sein
+    { de: "Rosa",   en: "rose",    type: "color", color: "#f9a8d4" },
+    { de: "Pink",   en: "pink",    type: "color", color: "#ec4899" },
+    { de: "Braun",  en: "brown",   type: "color", color: "#92400e" }
   ],
+
+  // 5. Möbel / Dinge im Zimmer – mit passenden Emojis
   moebel: [
-    { de: "Stuhl",   en: "chair",      type: "emoji", emoji: "🪑" },
-    { de: "Tisch",   en: "table",      type: "emoji", emoji: "🛋️" },
-    { de: "Bett",    en: "bed",        type: "emoji", emoji: "🛏️" },
-    { de: "Schrank", en: "wardrobe",   type: "emoji", emoji: "🚪" },
-    { de: "Sofa",    en: "sofa",       type: "emoji", emoji: "🛋️" },
-    { de: "Lampe",   en: "lamp",       type: "emoji", emoji: "💡" },
-    { de: "Regal",   en: "shelf",      type: "emoji", emoji: "📚" },
-    { de: "Teppich", en: "carpet",     type: "emoji", emoji: "🧶" },
-    { de: "Kommode", en: "dresser",    type: "emoji", emoji: "🧺" }
+    { de: "Stuhl",   en: "chair",   type: "emoji", emoji: "🪑" },
+    { de: "Bett",    en: "bed",     type: "emoji", emoji: "🛏️" },
+    { de: "Sofa",    en: "sofa",    type: "emoji", emoji: "🛋️" },
+    { de: "Lampe",   en: "lamp",    type: "emoji", emoji: "💡" },
+    { de: "Bücher",  en: "books",   type: "emoji", emoji: "📚" },
+    { de: "Spiegel", en: "mirror",  type: "emoji", emoji: "🪞" },
+    { de: "Pflanze", en: "plant",   type: "emoji", emoji: "🪴" },
+    { de: "Uhr",     en: "clock",   type: "emoji", emoji: "⏰" },
+    { de: "Tür",     en: "door",    type: "emoji", emoji: "🚪" }
   ],
+
+  // 6. Tiere (inkl. Löwe & Pferd)
   tiere: [
-    { de: "Pferd",   en: "horse",   type: "emoji", emoji: "🐴" }, // muss enthalten sein
-    { de: "Löwe",    en: "lion",    type: "emoji", emoji: "🦁" }, // muss enthalten sein
-    { de: "Hase",    en: "rabbit",  type: "emoji", emoji: "🐰" },
-    { de: "Katze",   en: "cat",     type: "emoji", emoji: "🐱" },
-    { de: "Hund",    en: "dog",     type: "emoji", emoji: "🐶" },
-    { de: "Kuh",     en: "cow",     type: "emoji", emoji: "🐮" },
-    { de: "Elefant", en: "elephant",type: "emoji", emoji: "🐘" },
-    { de: "Frosch",  en: "frog",    type: "emoji", emoji: "🐸" },
-    { de: "Vogel",   en: "bird",    type: "emoji", emoji: "🐦" }
+    { de: "Pferd",    en: "horse",    type: "emoji", emoji: "🐴" }, // muss enthalten sein
+    { de: "Löwe",     en: "lion",     type: "emoji", emoji: "🦁" }, // muss enthalten sein
+    { de: "Hase",     en: "rabbit",   type: "emoji", emoji: "🐰" },
+    { de: "Katze",    en: "cat",      type: "emoji", emoji: "🐱" },
+    { de: "Hund",     en: "dog",      type: "emoji", emoji: "🐶" },
+    { de: "Kuh",      en: "cow",      type: "emoji", emoji: "🐮" },
+    { de: "Elefant",  en: "elephant", type: "emoji", emoji: "🐘" },
+    { de: "Frosch",   en: "frog",     type: "emoji", emoji: "🐸" },
+    { de: "Vogel",    en: "bird",     type: "emoji", emoji: "🐦" }
   ]
 };
 
